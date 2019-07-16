@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:background="#4CAF50">
+    <TextView
+            android:id="@+id/status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:textSize="25sp"
+            android:textStyle="bold"
+            android:text="stopped"
+            android:gravity="center"
+    />
+
+    <ProgressBar
+            android:id="@+id/progressBar1"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:gravity="center"
+            android:layout_height="wrap_content"
+            android:max="110"/>
+
+    <TextView
+            android:id="@+id/tv_noice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:gravity="center"
+            android:textSize="36sp"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:typeface="monospace"/>
+
+    <TextView
+            android:id="@+id/avg_noise"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:gravity="center"
+            android:textSize="24sp"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:typeface="monospace"/>
+
+
+    <TextView
+            android:id="@+id/max_noise"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:gravity="center"
+            android:textSize="24sp"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:typeface="monospace"/>
+
+    <TextView
+            android:id="@+id/threshold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:gravity="center"
+            android:textSize="24sp"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:typeface="monospace"/>
+</LinearLayout>
+
