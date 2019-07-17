@@ -14,6 +14,12 @@ import android.widget.TextView
 import android.widget.Toast
 import android.media.MediaPlayer
 import android.graphics.Color
+import java.io.*
+
+import android.net.Uri
+import android.media.MediaPlayer.OnPreparedListener
+
+
 
 
 class MainActivity : AppCompatActivity() {
@@ -36,8 +42,9 @@ class MainActivity : AppCompatActivity() {
     private var threshold: TextView? = null
     private var _max_noise: Double = 0.0
     private var _avg_noise: Double = 0.0
-    private var counter: Double = 0.0
     private var sum_noise: Double = 0.0
+    private var counter: Double = 0.0
+    private lateinit var config: Map<*, *>
 
     /* sound data source */
     private var mSensor: DetectNoise? = null
@@ -60,13 +67,10 @@ class MainActivity : AppCompatActivity() {
                 _max_noise = amp
             }
 
-
-
             if (amp > 0) {
                 sum_noise = sum_noise + amp
                 counter += 1.0
             }
-
 
             Log.d("MAIN", "sum_noise:" + sum_noise)
             Log.d("MAIN", "amp:" + amp)
@@ -118,6 +122,8 @@ class MainActivity : AppCompatActivity() {
     /** Called when the activity is first created.  */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        config = getConfig()
         // Defined SoundLevelView in main.xml file
         setContentView(R.layout.activity_main)
         setPermissions()
@@ -183,8 +189,48 @@ class MainActivity : AppCompatActivity() {
 
     private fun initializeApplicationConstants() {
         // Set Noise Threshold
-        mThreshold = 65
+
+        mThreshold = config.get("mThreshold").toString().toInt()
+
         threshold!!.setText("Threshold:" + mThreshold + ".00 dB")
+
+    }
+
+    private fun saveInitialConfig(): Map<String, String> {
+        val config = mapOf(
+            "mThreshold" to "65",
+            "alarm_path" to "submarine"
+        )
+
+        saveConfig(config)
+        return config
+    }
+
+    private fun saveConfig(config: Any) {
+
+        //Write the family map object to a file
+        ObjectOutputStream(openFileOutput("silence_config", Context.MODE_PRIVATE)).use { it -> it.writeObject(config) }
+    }
+
+    private fun getConfig(): Map<*, *> {
+
+        try {
+
+            return ObjectInputStream(FileInputStream("silence_config")).use { it ->
+                //Read the family back from the file
+                val config = it.readObject()
+
+                //Cast it back into a Map
+                when (config) {
+                    //We can't use <String, String> because of type erasure
+                    is Map<*, *> -> config
+                    else -> saveInitialConfig()
+                }
+
+            }
+        } catch (e: FileNotFoundException) {
+            return saveInitialConfig()
+        }
 
     }
 
@@ -227,11 +273,23 @@ class MainActivity : AppCompatActivity() {
         tv_noice!!.setTextColor(Color.RED)
     }
 
+    private fun OnPreparedListener(player:MediaPlayer) {
+        player.start()
+    }
+
+
     private fun playAlarm() {
 
-        val mp = MediaPlayer.create(applicationContext, R.raw.submarine)
-        mp.seekTo(0)
-        //mp.start()
+
+        val path = config["alarm_path"].toString()
+        val uri = Uri.parse("android.resource://" + getApplicationContext().getPackageName() + "/raw/" + path)
+
+        Log.d("Noise", ""+uri)
+        val mp = MediaPlayer.create(applicationContext, uri)
+
+        mp?.setOnPreparedListener {
+            mp.start()
+        }
 
     }
 
