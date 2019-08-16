@@ -1,11 +1,11 @@
 package com.example.silence
 
 import android.content.pm.PackageManager
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.core.app.ActivityCompat
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.os.Handler
 import android.os.PowerManager
 import android.util.Log
@@ -14,17 +14,25 @@ import android.widget.TextView
 import android.widget.Toast
 import android.media.MediaPlayer
 import android.graphics.Color
+import android.graphics.PorterDuff
 import java.io.*
 
 import android.net.Uri
-import android.media.MediaPlayer.OnPreparedListener
+import android.view.MotionEvent
+import android.view.View
+import android.widget.Button
 
 
+/** Still configuration is not working
+ * -> save threshold (configuration file)
+ * -> browse sound files
+ * -> show dB scale in other activity*/
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : ConfigurableActivity() {
     /** running state  */
     private var mRunning = false
+    private var sound_working = false
 
     /** config state  */
     private var mThreshold: Int = 0
@@ -34,7 +42,7 @@ class MainActivity : AppCompatActivity() {
 
     private val mHandler = Handler()
 
-    /* References to view elements */
+    /** References to view elements */
     private var mStatusView: TextView? = null
     private var tv_noice: TextView? = null
     private var max_noise: TextView? = null
@@ -44,9 +52,9 @@ class MainActivity : AppCompatActivity() {
     private var _avg_noise: Double = 0.0
     private var sum_noise: Double = 0.0
     private var counter: Double = 0.0
-    private lateinit var config: Map<*, *>
+    private lateinit var player: MediaPlayer
 
-    /* sound data source */
+    /** sound data source */
     private var mSensor: DetectNoise? = null
     internal lateinit var bar: ProgressBar
     /****************** Define runnable thread again and again detect noise  */
@@ -123,10 +131,38 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        config = getConfig()
+
         // Defined SoundLevelView in main.xml file
         setContentView(R.layout.activity_main)
         setPermissions()
+
+        for ((k, v) in getConfiguration()) {
+            config.put(k.toString(), v.toString())
+        }
+
+        val btn_stop = findViewById(R.id.btn_stop) as Button
+
+        btn_stop.setOnClickListener {
+            Toast.makeText(this@MainActivity, "You clicked STOP.", Toast.LENGTH_SHORT).show()
+            stop()
+        }
+
+        val btn_start = findViewById(R.id.btn_start) as Button
+
+        btn_start.setOnClickListener {
+            Toast.makeText(this@MainActivity, "You clicked START.", Toast.LENGTH_SHORT).show()
+            start()
+        }
+
+        val btn_config = findViewById(R.id.btn_config) as Button
+
+        btn_config.setOnClickListener {
+            val intent = Intent(this, ConfigActivity::class.java)
+            // start your next activity
+            // intent.putExtra("threshold", mThreshold);
+            // intent.putExtra("file", config["alarm_path"].toString());
+            startActivity(intent)
+        }
 
     }
 
@@ -172,17 +208,41 @@ class MainActivity : AppCompatActivity() {
         mHandler.postDelayed(mPollTask, POLL_INTERVAL.toLong())
     }
 
+    fun buttonEffect(button: View) {
+        button.setOnTouchListener { v, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    v.background.setColorFilter(-0x1f0b8adf, PorterDuff.Mode.SRC_ATOP)
+                    v.invalidate()
+                }
+                MotionEvent.ACTION_UP -> {
+                    v.background.clearColorFilter()
+                    v.invalidate()
+                }
+            }
+            false
+        }
+    }
+
     private fun stop() {
         Log.d("Noise", "==== Stop Noise Monitoring===")
         if (mWakeLock!!.isHeld()) {
             mWakeLock!!.release()
         }
+
+        if (player != null && player.isPlaying()) {
+            player.stop()
+            player.reset()
+
+        }
+
         mHandler.removeCallbacks(mSleepTask)
         mHandler.removeCallbacks(mPollTask)
         mSensor!!.stop()
         bar.setProgress(0)
         updateDisplay("stopped...", 0.0)
         mRunning = false
+        sound_working = false
 
     }
 
@@ -190,47 +250,13 @@ class MainActivity : AppCompatActivity() {
     private fun initializeApplicationConstants() {
         // Set Noise Threshold
 
+        for ((k, v) in getConfiguration()) {
+            config.put(k.toString(), v.toString())
+        }
+
         mThreshold = config.get("mThreshold").toString().toInt()
 
         threshold!!.setText("Threshold:" + mThreshold + ".00 dB")
-
-    }
-
-    private fun saveInitialConfig(): Map<String, String> {
-        val config = mapOf(
-            "mThreshold" to "65",
-            "alarm_path" to "submarine"
-        )
-
-        saveConfig(config)
-        return config
-    }
-
-    private fun saveConfig(config: Any) {
-
-        //Write the family map object to a file
-        ObjectOutputStream(openFileOutput("silence_config", Context.MODE_PRIVATE)).use { it -> it.writeObject(config) }
-    }
-
-    private fun getConfig(): Map<*, *> {
-
-        try {
-
-            return ObjectInputStream(FileInputStream("silence_config")).use { it ->
-                //Read the family back from the file
-                val config = it.readObject()
-
-                //Cast it back into a Map
-                when (config) {
-                    //We can't use <String, String> because of type erasure
-                    is Map<*, *> -> config
-                    else -> saveInitialConfig()
-                }
-
-            }
-        } catch (e: FileNotFoundException) {
-            return saveInitialConfig()
-        }
 
     }
 
@@ -256,9 +282,6 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun callForHelp(signalEMA: Double) {
-
-        //stop();
-
         playAlarm()
 
         // Show alert when noise Threshold crossed
@@ -273,22 +296,28 @@ class MainActivity : AppCompatActivity() {
         tv_noice!!.setTextColor(Color.RED)
     }
 
-    private fun OnPreparedListener(player:MediaPlayer) {
-        player.start()
-    }
-
 
     private fun playAlarm() {
+
+        if (sound_working)
+            return
+
+        sound_working = true
 
 
         val path = config["alarm_path"].toString()
         val uri = Uri.parse("android.resource://" + getApplicationContext().getPackageName() + "/raw/" + path)
 
-        Log.d("Noise", ""+uri)
-        val mp = MediaPlayer.create(applicationContext, uri)
+        Log.d("Noise", "" + uri)
+        player = MediaPlayer.create(applicationContext, uri)
 
-        mp?.setOnPreparedListener {
-            mp.start()
+        player?.setOnCompletionListener {
+            player.reset()
+            sound_working = false
+        }
+
+        player?.setOnPreparedListener {
+            player.start()
         }
 
     }

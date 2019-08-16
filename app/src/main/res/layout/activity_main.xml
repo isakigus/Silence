@@ -2,8 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:orientation="vertical"
-              android:background="#4CAF50">
+              android:background="#4CAF50" android:orientation="vertical">
     <TextView
             android:id="@+id/status"
             android:layout_width="wrap_content"
@@ -13,11 +12,13 @@
             android:textStyle="bold"
             android:text="stopped"
             android:gravity="center"
+            android:layout_margin="10dp"
     />
 
     <ProgressBar
             android:id="@+id/progressBar1"
             style="?android:attr/progressBarStyleHorizontal"
+            android:layout_margin="20dp"
             android:layout_width="match_parent"
             android:gravity="center"
             android:layout_height="wrap_content"
@@ -29,6 +30,7 @@
             android:layout_height="wrap_content"
             android:text=""
             android:gravity="center"
+            android:layout_margin="10dp"
             android:textSize="36sp"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:typeface="monospace"/>
@@ -36,6 +38,7 @@
     <TextView
             android:id="@+id/avg_noise"
             android:layout_width="wrap_content"
+            android:layout_margin="10dp"
             android:layout_height="wrap_content"
             android:text=""
             android:gravity="center"
@@ -49,6 +52,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text=""
+            android:layout_margin="10dp"
             android:gravity="center"
             android:textSize="24sp"
             android:textAppearance="?android:attr/textAppearanceLarge"
@@ -61,7 +65,42 @@
             android:text=""
             android:gravity="center"
             android:textSize="24sp"
+            android:layout_margin="10dp"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:typeface="monospace"/>
+
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_margin="20dp"
+                    android:background="#4CAF50"
+    >
+
+        <Button
+                android:id="@+id/btn_stop"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Stop"
+                android:layout_alignParentStart="true"
+                android:background="@drawable/round_button"/>
+
+        <Button
+                android:id="@+id/btn_start"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="Start"
+                android:background="@drawable/round_button"/>
+        <Button
+                android:id="@+id/btn_config"
+                android:layout_alignParentEnd="true"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="config"
+                android:background="@drawable/round_button"/>
+
+    </RelativeLayout>
+
 </LinearLayout>
 
