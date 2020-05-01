@@ -225,19 +225,28 @@ class MainActivity : ConfigurableActivity() {
             wakeLock!!.release()
         }
 
-        if (player != null && player.isPlaying()) {
-            player.stop()
-            player.reset()
+        try {
+
+            if (player != null && player.isPlaying()) {
+                player.stop()
+                player.reset()
+            }
+        } catch (e: UninitializedPropertyAccessException) {
+            Log.d("Noise", "==== UninitializedPropertyAccessException ===")
 
         }
+
 
         androidOsHandler.removeCallbacks(mSleepTask)
         androidOsHandler.removeCallbacks(pollingTask)
         soundSensor!!.stop()
         progressBar.setProgress(0)
+        maxNoise = 0.0
+        avgNoise = 0.0
         updateDisplay("stopped...", 0.0)
         appIsRunning = false
         alarmIsActivated = false
+
 
     }
 
@@ -245,8 +254,8 @@ class MainActivity : ConfigurableActivity() {
     private fun initializeApplicationConstants() {
         // Set Noise Threshold
 
-        for ((k, v) in getConfiguration()) {
-            config.put(k.toString(), v.toString())
+        for ((key, value) in getConfiguration()) {
+            config.put(key.toString(), value.toString())
         }
 
         soundLevelLimit = config.get("mThreshold").toString().toInt()

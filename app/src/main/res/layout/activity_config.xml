@@ -43,4 +43,12 @@
             android:layout_margin="20dp"
             android:text="Save" />
 
+    <Button
+            android:id="@+id/btnReset"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="20dp"
+            android:text="Reset config" />
+
+
 </LinearLayout>

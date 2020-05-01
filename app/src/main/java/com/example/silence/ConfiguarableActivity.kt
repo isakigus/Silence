@@ -2,19 +2,19 @@ package com.example.silence
 
 
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import java.io.FileInputStream
-import java.io.FileNotFoundException
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
+import java.io.*
 
 
 abstract class ConfigurableActivity : AppCompatActivity() {
 
     var config: MutableMap<String, String> = mutableMapOf()
 
-    private fun saveInitialConfig(): Map<String, String> {
+    fun saveInitialConfig(): Map<String, String> {
+        Log.d("configurable", "==== saveInitialConfig ===")
+
         val config = mapOf(
             "mThreshold" to "65",
             "alarm_path" to "submarine"
@@ -27,16 +27,16 @@ abstract class ConfigurableActivity : AppCompatActivity() {
     fun saveConfig(config: Map<String, String>) {
 
         val threshold = config["mThreshold"]
-
         val message = "Saved config threshold $threshold db"
 
-        //Write the family map object to a file
-        ObjectOutputStream(
-            openFileOutput(
-                "silence_config",
-                Context.MODE_PRIVATE
-            )
-        ).use { it -> it.writeObject(config) }
+        val file = File(getDir("data", Context.MODE_PRIVATE), "config")
+        val outputStream =
+            ObjectOutputStream(FileOutputStream(file))
+
+        outputStream.writeObject(config)
+        outputStream.flush()
+        outputStream.close()
+
 
         Toast.makeText(
             applicationContext, message,
@@ -45,10 +45,25 @@ abstract class ConfigurableActivity : AppCompatActivity() {
     }
 
     fun getConfiguration(): Map<*, *> {
+        val config = _getConfiguration()
+        Log.d("getConfiguration", config.toString())
+        return config
+
+    }
+
+
+    private fun _getConfiguration(): Map<*, *> {
+
+        Log.d("configurable", "==== getConfiguration ===")
+
 
         try {
 
-            return ObjectInputStream(FileInputStream("silence_config")).use { it ->
+            val file = File(getDir("data", Context.MODE_PRIVATE), "config")
+            val inputStream =
+                ObjectInputStream(FileInputStream(file))
+
+            return inputStream.use { it ->
                 // Read the family back from the file
                 // Cast it back into a Map
                 when (val config = it.readObject()) {
@@ -58,7 +73,10 @@ abstract class ConfigurableActivity : AppCompatActivity() {
                 }
 
             }
+
+            Log.d("configurable", "==== getConfiguration ===")
         } catch (e: FileNotFoundException) {
+            Log.d("configurable", "==== FileNotFoundException ===")
             return saveInitialConfig()
         }
 
