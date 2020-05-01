@@ -20,9 +20,7 @@ class ConfigActivity : ConfigurableActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        for ((key, value) in getConfiguration()) {
-            config[key.toString()] = value.toString()
-        }
+        updateConfiguration()
 
         setContentView(R.layout.activity_config)
 

@@ -47,14 +47,17 @@ abstract class ConfigurableActivity : AppCompatActivity() {
         ).show()
     }
 
-    fun getConfiguration(): Map<*, *> {
-        val config = _getConfiguration()
-        Log.d("getConfiguration", config.toString())
-        return config
+    fun updateConfiguration(): Map<String, String> {
+       for ((key, value) in getConfiguration()) {
+           config[key.toString()] = value.toString()
+       }
 
+        Log.d("updateConfiguration", config.toString())
+
+        return config
     }
 
-    private fun _getConfiguration(): Map<*, *> {
+    private fun getConfiguration(): Map<*, *> {
 
         Log.d("configurable", "==== getConfiguration ===")
 
@@ -72,10 +75,8 @@ abstract class ConfigurableActivity : AppCompatActivity() {
                     is Map<*, *> -> config
                     else -> saveInitialConfig()
                 }
-
             }
 
-            Log.d("configurable", "==== getConfiguration ===")
         } catch (e: FileNotFoundException) {
             Log.d("configurable", "==== FileNotFoundException ===")
             return saveInitialConfig()
