@@ -110,6 +110,5 @@ class ConfigActivity : ConfigurableActivity() {
         super.onStop()
 
     }
-
-
+    
 }

@@ -22,10 +22,12 @@ import android.widget.Button
 /** Still configuration is not working
  * -> save threshold (configuration file) (done)
  * -> browse sound files (done)
- * -> stop/exit button
- * -> show dB scale in other activity
+ * -> stop/exit button (done)
+
+ * -> show dB scale in other activity (review algorithm)
  * -> noise level chart
  * -> waw loop
+ * -> upload to playstore
  * */
 
 
@@ -206,6 +208,15 @@ class MainActivity : ConfigurableActivity() {
             )
         }
 
+        val btnStop = findViewById<Button>(R.id.btn_stop)
+        btnStop.text= "STOP"
+
+        btnStop.setOnClickListener {
+            Toast.makeText(this@MainActivity, "You clicked STOP.",
+                Toast.LENGTH_SHORT).show()
+            stop()
+        }
+
         soundSensor!!.start()
         if (!wakeLock!!.isHeld()) {
             wakeLock!!.acquire()
@@ -215,6 +226,7 @@ class MainActivity : ConfigurableActivity() {
     }
 
     private fun stop() {
+
         Log.d("Noise", "==== Stop Noise Monitoring===")
         if (wakeLock!!.isHeld()) {
             wakeLock!!.release()
@@ -237,9 +249,20 @@ class MainActivity : ConfigurableActivity() {
         progressBar.progress = 0
         maxNoise = 0.0
         avgNoise = 0.0
+
+        val btnStop = findViewById<Button>(R.id.btn_stop)
+        btnStop.text= "EXIT"
+
+        btnStop.setOnClickListener {
+            Toast.makeText(this@MainActivity, "You clicked Exit.",
+                Toast.LENGTH_SHORT).show()
+            finishAndRemoveTask()
+        }
+
         updateDisplay("stopped...", 0.0)
         appIsRunning = false
         alarmIsActivated = false
+
 
     }
 
