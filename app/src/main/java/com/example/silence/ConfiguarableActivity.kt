@@ -15,9 +15,12 @@ abstract class ConfigurableActivity : AppCompatActivity() {
     fun saveInitialConfig(): Map<String, String> {
         Log.d("configurable", "==== saveInitialConfig ===")
 
+        val path = "android.resource://" + applicationContext.packageName +
+                "/raw/submarine"
+
         val config = mapOf(
             "mThreshold" to "65",
-            "alarm_path" to "submarine"
+            "alarm_path" to path
         )
 
         saveConfig(config)
@@ -51,11 +54,9 @@ abstract class ConfigurableActivity : AppCompatActivity() {
 
     }
 
-
     private fun _getConfiguration(): Map<*, *> {
 
         Log.d("configurable", "==== getConfiguration ===")
-
 
         try {
 

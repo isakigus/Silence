@@ -23,7 +23,7 @@ import android.widget.Button
 
 
 /** Still configuration is not working
- * -> save threshold (configuration file)
+ * -> save threshold (configuration file) (done)
  * -> browse sound files
  * -> show dB scale in other activity
  * -> noise level chart
@@ -55,6 +55,7 @@ class MainActivity : ConfigurableActivity() {
     private var sumNoise: Double = 0.0
     private var counter: Double = 0.0
     private lateinit var player: MediaPlayer
+    val MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE:Int = 1
 
     /** sound data source */
     private var soundSensor: DetectNoise? = null
@@ -99,16 +100,28 @@ class MainActivity : ConfigurableActivity() {
 
     private fun setPermissions() {
 
-        if (ActivityCompat.checkSelfPermission(
+        if (
+            ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.RECORD_AUDIO
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.i("SILENCE", "Permission to record denied")
 
-        } else {
-            startRecording();
+            Log.i("SILENCE", "Permission to record denied")
+            finishAndRemoveTask()
         }
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+            != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this,
+                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE)
+
+        }
+
+        startRecording();
+
     }
 
     private fun startRecording() {
@@ -139,27 +152,24 @@ class MainActivity : ConfigurableActivity() {
             config.put(key.toString(), value.toString())
         }
 
-        val btnStop = findViewById(R.id.btn_stop) as Button
+        val btnStop = findViewById<Button>(R.id.btn_stop)
 
         btnStop.setOnClickListener {
             Toast.makeText(this@MainActivity, "You clicked STOP.", Toast.LENGTH_SHORT).show()
             stop()
         }
 
-        val btnStart = findViewById(R.id.btn_start) as Button
+        val btnStart = findViewById<Button>(R.id.btn_start)
 
         btnStart.setOnClickListener {
             Toast.makeText(this@MainActivity, "You clicked START.", Toast.LENGTH_SHORT).show()
             start()
         }
 
-        val btnConfig = findViewById(R.id.btn_config) as Button
+        val btnConfig = findViewById<Button>(R.id.btn_config)
 
         btnConfig.setOnClickListener {
             val intent = Intent(this, ConfigActivity::class.java)
-            // start your next activity
-            // intent.putExtra("threshold", mThreshold);
-            // intent.putExtra("file", config["alarm_path"].toString());
             startActivity(intent)
         }
 
@@ -203,22 +213,6 @@ class MainActivity : ConfigurableActivity() {
         androidOsHandler.postDelayed(pollingTask, POLL_INTERVAL.toLong())
     }
 
-    fun buttonEffect(button: View) {
-        button.setOnTouchListener { v, event ->
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    v.background.setColorFilter(-0x1f0b8adf, PorterDuff.Mode.SRC_ATOP)
-                    v.invalidate()
-                }
-                MotionEvent.ACTION_UP -> {
-                    v.background.clearColorFilter()
-                    v.invalidate()
-                }
-            }
-            false
-        }
-    }
-
     private fun stop() {
         Log.d("Noise", "==== Stop Noise Monitoring===")
         if (wakeLock!!.isHeld()) {
@@ -236,17 +230,15 @@ class MainActivity : ConfigurableActivity() {
 
         }
 
-
         androidOsHandler.removeCallbacks(mSleepTask)
         androidOsHandler.removeCallbacks(pollingTask)
         soundSensor!!.stop()
-        progressBar.setProgress(0)
+        progressBar.progress = 0
         maxNoise = 0.0
         avgNoise = 0.0
         updateDisplay("stopped...", 0.0)
         appIsRunning = false
         alarmIsActivated = false
-
 
     }
 
@@ -255,19 +247,19 @@ class MainActivity : ConfigurableActivity() {
         // Set Noise Threshold
 
         for ((key, value) in getConfiguration()) {
-            config.put(key.toString(), value.toString())
+            config[key.toString()] = value.toString()
         }
 
-        soundLevelLimit = config.get("mThreshold").toString().toInt()
-
-        noiseThresholdLabel!!.setText("Threshold:" + soundLevelLimit + ".00 dB")
+        soundLevelLimit = config["mThreshold"].toString().toInt()
+        noiseThresholdLabel!!.text = "Threshold:" + soundLevelLimit + ".00 dB"
 
     }
 
     private fun updateDisplay(status: String, signalEMA: Double) {
-        statusLabel!!.setText(status)
-        //
-        progressBar.setProgress(signalEMA.toInt())
+
+        statusLabel!!.text = status
+        progressBar.progress = signalEMA.toInt()
+
         Log.d("SOUND", signalEMA.toString())
 
         maxNoiseLabel!!.setText("Max:%.2f dB".format(maxNoise))
@@ -276,10 +268,10 @@ class MainActivity : ConfigurableActivity() {
         actualNoiseLabel!!.setTextColor(Color.BLACK)
 
         if (signalEMA > 0.0) {
-            actualNoiseLabel!!.setText("Actual:%.2f dB".format(signalEMA))
+            actualNoiseLabel!!.text = "Actual:%.2f dB".format(signalEMA)
 
         } else {
-            actualNoiseLabel!!.setText("Actual:0.00 dB")
+            actualNoiseLabel!!.text = "Actual:0.00 dB"
         }
     }
 
@@ -295,7 +287,7 @@ class MainActivity : ConfigurableActivity() {
 
 
         Log.d("SOUND", signalEMA.toString())
-        actualNoiseLabel!!.setText("Actual:%.2f dB".format(signalEMA))
+        actualNoiseLabel!!.text = "Actual:%.2f dB".format(signalEMA)
         actualNoiseLabel!!.setTextColor(Color.RED)
     }
 
@@ -307,13 +299,8 @@ class MainActivity : ConfigurableActivity() {
 
         alarmIsActivated = true
 
-
         val path = config["alarm_path"].toString()
-        val uri =
-            Uri.parse(
-                "android.resource://" + getApplicationContext().getPackageName() +
-                        "/raw/" + path
-            )
+        val uri = Uri.parse(path)
 
         Log.d("Noise", "" + uri)
         player = MediaPlayer.create(applicationContext, uri)

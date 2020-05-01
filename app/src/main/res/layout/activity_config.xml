@@ -3,7 +3,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#4CAF50"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:visibility="visible">
 
     <TextView
             android:id="@+id/status"
@@ -28,12 +29,22 @@
             android:textSize="25sp"></EditText>
 
     <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="20dp"
+            android:background="#7FD383"
+            android:gravity="center"
+            android:text="Alarm file:"
+            android:textSize="25sp"
+            android:textStyle="bold" />
+
+    <TextView
             android:id="@+id/alarm_file"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_margin="20dp"
             android:gravity="left"
-            android:text="Alarm file:"
+            android:text=""
             android:textStyle="bold" />
 
     <Button
@@ -43,12 +54,19 @@
             android:layout_margin="20dp"
             android:text="Save" />
 
+
+    <Button
+            android:id="@+id/buttonOpen"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="20dp"
+            android:text="open file" />
+
     <Button
             android:id="@+id/btnReset"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_margin="20dp"
             android:text="Reset config" />
-
 
 </LinearLayout>
