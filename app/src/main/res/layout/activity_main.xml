@@ -25,7 +25,7 @@
             android:max="110"/>
 
     <TextView
-            android:id="@+id/tv_noice"
+            android:id="@+id/actual_noise"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text=""

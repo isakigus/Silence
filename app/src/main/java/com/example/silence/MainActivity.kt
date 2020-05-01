@@ -15,7 +15,6 @@ import android.widget.Toast
 import android.media.MediaPlayer
 import android.graphics.Color
 import android.graphics.PorterDuff
-import java.io.*
 
 import android.net.Uri
 import android.view.MotionEvent
@@ -26,74 +25,75 @@ import android.widget.Button
 /** Still configuration is not working
  * -> save threshold (configuration file)
  * -> browse sound files
- * -> show dB scale in other activity*/
+ * -> show dB scale in other activity
+ * -> noise level chart
+ * -> waw loop
+ * */
 
 
 class MainActivity : ConfigurableActivity() {
     /** running state  */
-    private var mRunning = false
-    private var sound_working = false
+    private var appIsRunning = false
+    private var alarmIsActivated = false
 
     /** config state  */
-    private var mThreshold: Int = 0
+    private var soundLevelLimit: Int = 0
 
     internal var RECORD_AUDIO = 0
-    private var mWakeLock: PowerManager.WakeLock? = null
+    private var wakeLock: PowerManager.WakeLock? = null
 
-    private val mHandler = Handler()
+    private val androidOsHandler = Handler() // to create a thread
 
     /** References to view elements */
-    private var mStatusView: TextView? = null
-    private var tv_noice: TextView? = null
-    private var max_noise: TextView? = null
-    private var avg_noise: TextView? = null
-    private var threshold: TextView? = null
-    private var _max_noise: Double = 0.0
-    private var _avg_noise: Double = 0.0
-    private var sum_noise: Double = 0.0
+    private var statusLabel: TextView? = null
+    private var actualNoiseLabel: TextView? = null
+    private var maxNoiseLabel: TextView? = null
+    private var avgNoiseLabel: TextView? = null
+    private var noiseThresholdLabel: TextView? = null
+    private var maxNoise: Double = 0.0
+    private var avgNoise: Double = 0.0
+    private var sumNoise: Double = 0.0
     private var counter: Double = 0.0
     private lateinit var player: MediaPlayer
 
     /** sound data source */
-    private var mSensor: DetectNoise? = null
-    internal lateinit var bar: ProgressBar
+    private var soundSensor: DetectNoise? = null
+    internal lateinit var progressBar: ProgressBar
+
     /****************** Define runnable thread again and again detect noise  */
 
-    private val mSleepTask = object : Runnable {
-        override fun run() {
-            //Log.i("Noise", "runnable mSleepTask");
-            start()
-        }
+    private val mSleepTask = Runnable { //Log.i("Noise", "runnable mSleepTask");
+        start()
     }
 
     // Create runnable thread to Monitor Voice
-    private val mPollTask = object : Runnable {
+    private val pollingTask = object : Runnable {
         override fun run() {
-            val amp = mSensor!!.getAmplitude()
+            val waveAmplitude = soundSensor!!.getAmplitude()
 
-            if (amp > _max_noise) {
-                _max_noise = amp
+            if (waveAmplitude > maxNoise) {
+                maxNoise = waveAmplitude
             }
 
-            if (amp > 0) {
-                sum_noise = sum_noise + amp
+            if (waveAmplitude > 0) {
+                sumNoise += waveAmplitude
                 counter += 1.0
             }
 
-            Log.d("MAIN", "sum_noise:" + sum_noise)
-            Log.d("MAIN", "amp:" + amp)
+            Log.d("MAIN", "sum_noise:" + sumNoise)
+            Log.d("MAIN", "amp:" + waveAmplitude)
             Log.d("MAIN", "counter:" + counter)
 
-            _avg_noise = sum_noise / counter
+            avgNoise = sumNoise / counter
             //Log.i("Noise", "runnable mPollTask");
-            updateDisplay("Monitoring Voice...", amp)
+            updateDisplay("Monitoring Voice...", waveAmplitude)
 
-            if (amp > mThreshold) {
-                callForHelp(amp)
+            if (waveAmplitude > soundLevelLimit) {
+                callForHelp(waveAmplitude)
                 //Log.i("Noise", "==== onCreate ===");
             }
             // Runnable(mPollTask) will again execute after POLL_INTERVAL
-            mHandler.postDelayed(this, POLL_INTERVAL.toLong())
+            androidOsHandler.postDelayed(this, POLL_INTERVAL.toLong())
         }
     }
 
@@ -113,17 +113,17 @@ class MainActivity : ConfigurableActivity() {
 
     private fun startRecording() {
 
-        mStatusView = findViewById(R.id.status) as TextView
-        tv_noice = findViewById(R.id.tv_noice) as TextView
-        avg_noise = findViewById(R.id.avg_noise) as TextView
-        max_noise = findViewById(R.id.max_noise) as TextView
-        threshold = findViewById(R.id.threshold) as TextView
+        statusLabel = findViewById(R.id.status) as TextView
+        actualNoiseLabel = findViewById(R.id.actual_noise) as TextView
+        avgNoiseLabel = findViewById(R.id.avg_noise) as TextView
+        maxNoiseLabel = findViewById(R.id.max_noise) as TextView
+        noiseThresholdLabel = findViewById(R.id.threshold) as TextView
 
-        bar = findViewById(R.id.progressBar1) as ProgressBar
+        progressBar = findViewById(R.id.progressBar1) as ProgressBar
         // Used to record voice
-        mSensor = DetectNoise()
+        soundSensor = DetectNoise()
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-        mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "NoiseAlert:")
+        wakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "NoiseAlert:")
     }
 
 
@@ -131,32 +131,31 @@ class MainActivity : ConfigurableActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
         // Defined SoundLevelView in main.xml file
         setContentView(R.layout.activity_main)
         setPermissions()
 
-        for ((k, v) in getConfiguration()) {
-            config.put(k.toString(), v.toString())
+        for ((key, value) in getConfiguration()) {
+            config.put(key.toString(), value.toString())
         }
 
-        val btn_stop = findViewById(R.id.btn_stop) as Button
+        val btnStop = findViewById(R.id.btn_stop) as Button
 
-        btn_stop.setOnClickListener {
+        btnStop.setOnClickListener {
             Toast.makeText(this@MainActivity, "You clicked STOP.", Toast.LENGTH_SHORT).show()
             stop()
         }
 
-        val btn_start = findViewById(R.id.btn_start) as Button
+        val btnStart = findViewById(R.id.btn_start) as Button
 
-        btn_start.setOnClickListener {
+        btnStart.setOnClickListener {
             Toast.makeText(this@MainActivity, "You clicked START.", Toast.LENGTH_SHORT).show()
             start()
         }
 
-        val btn_config = findViewById(R.id.btn_config) as Button
+        val btnConfig = findViewById(R.id.btn_config) as Button
 
-        btn_config.setOnClickListener {
+        btnConfig.setOnClickListener {
             val intent = Intent(this, ConfigActivity::class.java)
             // start your next activity
             // intent.putExtra("threshold", mThreshold);
@@ -168,18 +167,16 @@ class MainActivity : ConfigurableActivity() {
 
     override fun onResume() {
         super.onResume()
-        //Log.i("Noise", "==== onResume ===");
 
         initializeApplicationConstants()
-        if (!mRunning) {
-            mRunning = true
+        if (!appIsRunning) {
+            appIsRunning = true
             start()
         }
     }
 
     override fun onStop() {
         super.onStop()
-        // Log.i("Noise", "==== onStop ===");
         //Stop noise monitoring
         stop()
     }
@@ -198,14 +195,12 @@ class MainActivity : ConfigurableActivity() {
             )
         }
 
-        //Log.i("Noise", "==== start ===");
-        mSensor!!.start()
-        if (!mWakeLock!!.isHeld()) {
-            mWakeLock!!.acquire()
+        soundSensor!!.start()
+        if (!wakeLock!!.isHeld()) {
+            wakeLock!!.acquire()
         }
         //Noise monitoring start
-        // Runnable(mPollTask) will execute after POLL_INTERVAL
-        mHandler.postDelayed(mPollTask, POLL_INTERVAL.toLong())
+        androidOsHandler.postDelayed(pollingTask, POLL_INTERVAL.toLong())
     }
 
     fun buttonEffect(button: View) {
@@ -226,8 +221,8 @@ class MainActivity : ConfigurableActivity() {
 
     private fun stop() {
         Log.d("Noise", "==== Stop Noise Monitoring===")
-        if (mWakeLock!!.isHeld()) {
-            mWakeLock!!.release()
+        if (wakeLock!!.isHeld()) {
+            wakeLock!!.release()
         }
 
         if (player != null && player.isPlaying()) {
@@ -236,13 +231,13 @@ class MainActivity : ConfigurableActivity() {
 
         }
 
-        mHandler.removeCallbacks(mSleepTask)
-        mHandler.removeCallbacks(mPollTask)
-        mSensor!!.stop()
-        bar.setProgress(0)
+        androidOsHandler.removeCallbacks(mSleepTask)
+        androidOsHandler.removeCallbacks(pollingTask)
+        soundSensor!!.stop()
+        progressBar.setProgress(0)
         updateDisplay("stopped...", 0.0)
-        mRunning = false
-        sound_working = false
+        appIsRunning = false
+        alarmIsActivated = false
 
     }
 
@@ -254,29 +249,28 @@ class MainActivity : ConfigurableActivity() {
             config.put(k.toString(), v.toString())
         }
 
-        mThreshold = config.get("mThreshold").toString().toInt()
+        soundLevelLimit = config.get("mThreshold").toString().toInt()
 
-        threshold!!.setText("Threshold:" + mThreshold + ".00 dB")
+        noiseThresholdLabel!!.setText("Threshold:" + soundLevelLimit + ".00 dB")
 
     }
 
     private fun updateDisplay(status: String, signalEMA: Double) {
-        mStatusView!!.setText(status)
+        statusLabel!!.setText(status)
         //
-        bar.setProgress(signalEMA.toInt())
+        progressBar.setProgress(signalEMA.toInt())
         Log.d("SOUND", signalEMA.toString())
 
-        max_noise!!.setText("Max:%.2f dB".format(_max_noise))
-        avg_noise!!.setText("Avg:%.2f dB".format(_avg_noise))
+        maxNoiseLabel!!.setText("Max:%.2f dB".format(maxNoise))
+        avgNoiseLabel!!.setText("Avg:%.2f dB".format(avgNoise))
 
-        tv_noice!!.setTextColor(Color.BLACK)
+        actualNoiseLabel!!.setTextColor(Color.BLACK)
 
         if (signalEMA > 0.0) {
-            tv_noice!!.setText("Actual:%.2f dB".format(signalEMA))
-
+            actualNoiseLabel!!.setText("Actual:%.2f dB".format(signalEMA))
 
         } else {
-            tv_noice!!.setText("Actual:0.00 dB")
+            actualNoiseLabel!!.setText("Actual:0.00 dB")
         }
     }
 
@@ -286,34 +280,38 @@ class MainActivity : ConfigurableActivity() {
 
         // Show alert when noise Threshold crossed
         Toast.makeText(
-            applicationContext, "Noise Threshold Crossed, do here your stuff.",
+            applicationContext, "Noise Threshold Crossed!",
             Toast.LENGTH_LONG
         ).show()
 
 
         Log.d("SOUND", signalEMA.toString())
-        tv_noice!!.setText("Actual:%.2f dB".format(signalEMA))
-        tv_noice!!.setTextColor(Color.RED)
+        actualNoiseLabel!!.setText("Actual:%.2f dB".format(signalEMA))
+        actualNoiseLabel!!.setTextColor(Color.RED)
     }
 
 
     private fun playAlarm() {
 
-        if (sound_working)
+        if (alarmIsActivated)
             return
 
-        sound_working = true
+        alarmIsActivated = true
 
 
         val path = config["alarm_path"].toString()
-        val uri = Uri.parse("android.resource://" + getApplicationContext().getPackageName() + "/raw/" + path)
+        val uri =
+            Uri.parse(
+                "android.resource://" + getApplicationContext().getPackageName() +
+                        "/raw/" + path
+            )
 
         Log.d("Noise", "" + uri)
         player = MediaPlayer.create(applicationContext, uri)
 
         player?.setOnCompletionListener {
             player.reset()
-            sound_working = false
+            alarmIsActivated = false
         }
 
         player?.setOnPreparedListener {
@@ -324,7 +322,7 @@ class MainActivity : ConfigurableActivity() {
 
     companion object {
         /* constants */
-        private val POLL_INTERVAL = 300
+        private const val POLL_INTERVAL = 300
     }
 
 }

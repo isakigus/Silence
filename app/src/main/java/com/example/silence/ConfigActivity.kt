@@ -1,7 +1,7 @@
 package com.example.silence
 
 import android.os.Bundle
-import android.util.Log
+// import android.util.Log
 import android.widget.Button
 import android.widget.Toast
 
@@ -12,11 +12,8 @@ class ConfigActivity : ConfigurableActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // config = getConfig()
         // Defined SoundLevelView in main.xml file
         setContentView(R.layout.activity_config)
-        //
-
 
         //actionbar
         val actionbar = supportActionBar
@@ -24,19 +21,18 @@ class ConfigActivity : ConfigurableActivity() {
         actionbar!!.title = "Configuration"
         //set back button
         actionbar.setDisplayHomeAsUpEnabled(true)
-        actionbar.setDisplayHomeAsUpEnabled(true)
 
-        val btn_save = findViewById(R.id.btn_save) as Button
+        val btnSave = findViewById<Button>(R.id.btnSave)
 
-        btn_save.setOnClickListener {
-            Toast.makeText(this@ConfigActivity, "You clicked SAVE.", Toast.LENGTH_SHORT).show()
-            config.put("alarm_path", "hola")
-            config.put("mThreshold", "80.00")
-
+        btnSave.setOnClickListener {
+            Toast.makeText(
+                this@ConfigActivity,
+                "You clicked SAVE.", Toast.LENGTH_SHORT
+            ).show()
+            config["alarm_path"] = "hola"
+            config["mThreshold"] = "80.00"
             saveConfig(config)
-
         }
-
 
     }
 

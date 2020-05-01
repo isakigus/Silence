@@ -1,60 +1,57 @@
 package com.example.silence
 
-
 import java.io.IOException
 import android.media.MediaRecorder
 
 class DetectNoise {
 
-    private var mRecorder: MediaRecorder? = null
-    private var mEMA = 0.0
+    private var mediaRecorder: MediaRecorder? = null
+    private var EMA = 0.0 /*Exponential Moving Average*/
 
     //return  (mRecorder.getMaxAmplitude()/2700.0);
     fun getAmplitude(): Double {
 
-        if (mRecorder != null)
-            return 20.0 * Math.log10(mRecorder!!.getMaxAmplitude() / 1.0)
+        if (mediaRecorder != null)
+            return 20.0 * Math.log10(mediaRecorder!!.getMaxAmplitude() / 1.0)
         else
             return 0.0
     }
 
     fun getAmplitudeEMA(): Double {
-        val amp = getAmplitude()
-        mEMA = EMA_FILTER * amp + (1.0 - EMA_FILTER) * mEMA
-        return mEMA
+        val amplitude = getAmplitude()
+        EMA = EMA_FILTER * amplitude + (1.0 - EMA_FILTER) * EMA
+        return EMA
 
     }
 
     fun start() {
 
-        if (mRecorder == null) {
+        if (mediaRecorder == null) {
 
-            mRecorder = MediaRecorder()
-            mRecorder!!.setAudioSource(MediaRecorder.AudioSource.MIC)
-            mRecorder!!.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-            mRecorder!!.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-            mRecorder!!.setOutputFile("/dev/null")
+            mediaRecorder = MediaRecorder()
+            mediaRecorder!!.setAudioSource(MediaRecorder.AudioSource.MIC)
+            mediaRecorder!!.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+            mediaRecorder!!.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+            mediaRecorder!!.setOutputFile("/dev/null")
 
             try {
-                mRecorder!!.prepare()
+                mediaRecorder!!.prepare()
             } catch (e: IllegalStateException) {
-                // TODO Auto-generated catch block
                 e.printStackTrace()
             } catch (e: IOException) {
-                // TODO Auto-generated catch block
                 e.printStackTrace()
             }
 
-            mRecorder!!.start()
-            mEMA = 0.0
+            mediaRecorder!!.start()
+            EMA = 0.0
         }
     }
 
     fun stop() {
-        if (mRecorder != null) {
-            mRecorder!!.stop()
-            mRecorder!!.release()
-            mRecorder = null
+        if (mediaRecorder != null) {
+            mediaRecorder!!.stop()
+            mediaRecorder!!.release()
+            mediaRecorder = null
         }
     }
 
